@@ -234,6 +234,18 @@ function pickEmployeeNo(
   return "";
 }
 
+function resolveBaseUrl(requestUrl: string): string {
+  const redirectUri = process.env.REDIRECT_URI;
+  if (redirectUri) {
+    try {
+      return new URL(redirectUri).origin;
+    } catch {
+      // Fall through to request origin if REDIRECT_URI is malformed.
+    }
+  }
+  return new URL(requestUrl).origin;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
@@ -311,6 +323,6 @@ export async function GET(request: NextRequest) {
     department,
   });
 
-  const baseUrl = process.env.REDIRECT_URI?.replace("/api/auth/callback", "");
+  const baseUrl = resolveBaseUrl(request.url);
   return Response.redirect(`${baseUrl}/welcome?${params}`);
 }

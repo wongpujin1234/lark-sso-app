@@ -5,7 +5,8 @@ import { useEffect } from "react";
 export default function Home() {
   useEffect(() => {
     const appId = process.env.NEXT_PUBLIC_LARK_APP_ID;
-    const redirectUri = encodeURIComponent("https://lark-sso-app1.vercel.app/api/auth/callback");
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/callback`);
 
     const scope = encodeURIComponent(
       [
