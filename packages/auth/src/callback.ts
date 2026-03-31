@@ -1,6 +1,3 @@
-// app/api/auth/callback/route.ts
-import { NextRequest } from "next/server";
-
 const LARK_BASE = "https://open.larksuite.com/open-apis";
 
 type UserIdType = "open_id" | "user_id" | "union_id";
@@ -15,7 +12,6 @@ function departmentDisplayName(dept: {
   return n.en_us || n.zh_cn || "";
 }
 
-/** Pull department IDs from Contact user payload (field shapes vary by tenant). */
 function extractDepartmentIds(user: Record<string, unknown>): string[] {
   const raw = user?.department_ids;
   if (Array.isArray(raw) && raw.length > 0) {
@@ -61,7 +57,6 @@ async function fetchDepartmentName(
   return "";
 }
 
-/** Batch get user — Lark may return items under `items` or `user_list`. */
 async function fetchDepartmentIdsViaBatch(
   authToken: string,
   openId: string,
@@ -143,7 +138,6 @@ async function resolveDepartmentNames(
     if (n) names.push(n);
   }
   if (names.length > 0) return names.join(", ");
-  // Name lookup failed (still useful to show IDs for debugging / partial visibility)
   return deptIds.join(", ");
 }
 
@@ -166,7 +160,6 @@ async function fetchContactExtras(
 
   let contactUser: Record<string, unknown> | null = null;
 
-  // 1) Batch API (user token first)
   for (const token of tokens) {
     for (const deptType of ["open_department_id", "department_id"] as const) {
       const batch = await fetchDepartmentIdsViaBatch(token, openId, deptType);
@@ -187,7 +180,6 @@ async function fetchContactExtras(
     }
   }
 
-  // 2) Single-user GET
   const attempts: Array<{ id: string; userIdType: UserIdType }> = [];
   if (openId) attempts.push({ id: openId, userIdType: "open_id" });
   if (oidcUser.user_id) {
@@ -221,7 +213,6 @@ async function fetchContactExtras(
   return { department, contactUser };
 }
 
-/** Prefer OIDC employee_no; else Contact `employee_no` when present. */
 function pickEmployeeNo(
   oidcEmployeeNo: string | undefined,
   contactUser: Record<string, unknown> | null
@@ -246,15 +237,10 @@ function resolveBaseUrl(requestUrl: string): string {
   return new URL(requestUrl).origin;
 }
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get("code");
-
-  if (!code) {
-    return new Response("Missing code", { status: 400 });
-  }
-
-  // 1. Get tenant access token
+export async function handleLarkOAuthCallback(
+  requestUrl: string,
+  code: string
+): Promise<Response> {
   const tokenRes = await fetch(
     `${LARK_BASE}/auth/v3/tenant_access_token/internal`,
     {
@@ -269,7 +255,6 @@ export async function GET(request: NextRequest) {
   const tokenData = await tokenRes.json();
   const appToken = tokenData.tenant_access_token as string | undefined;
 
-  // 2. Exchange code for user access token
   const userTokenRes = await fetch(`${LARK_BASE}/authen/v1/oidc/access_token`, {
     method: "POST",
     headers: {
@@ -287,7 +272,6 @@ export async function GET(request: NextRequest) {
     return new Response(JSON.stringify(userTokenData), { status: 401 });
   }
 
-  // 3. Fetch user info (OIDC)
   const userInfoRes = await fetch(`${LARK_BASE}/authen/v1/user_info`, {
     headers: { Authorization: `Bearer ${userAccessToken}` },
   });
@@ -300,7 +284,6 @@ export async function GET(request: NextRequest) {
     union_id: user?.union_id as string | undefined,
   };
 
-  // 4. Department + Contact user row (employee_no, etc.)
   const { department, contactUser } = await fetchContactExtras(
     appToken ?? "",
     userAccessToken,
@@ -311,7 +294,6 @@ export async function GET(request: NextRequest) {
     contactUser
   );
 
-  // 5. Redirect to welcome page
   const params = new URLSearchParams({
     name: user?.name || "",
     en_name: user?.en_name || "",
@@ -323,6 +305,6 @@ export async function GET(request: NextRequest) {
     department,
   });
 
-  const baseUrl = resolveBaseUrl(request.url);
+  const baseUrl = resolveBaseUrl(requestUrl);
   return Response.redirect(`${baseUrl}/welcome?${params}`);
 }

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SOS - BeLive",
-  description: "BeLive Lark SSO sign-in",
+  title: "SOS - BeLive (Mobile)",
+  description: "BeLive Lark SSO sign-in — mobile",
 };
 
 export default function RootLayout({
