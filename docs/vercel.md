@@ -7,6 +7,18 @@
 
 Framework: Next.js (auto-detected). Do not set the root to the monorepo root for either project.
 
+Each app includes [`vercel.json`](../apps/desktop/vercel.json) with `installCommand: cd ../.. && npm ci` so workspace packages (`@lark-sso/*`) install from the repo root (uses root `package-lock.json`; avoids flaky `npm install` on Vercel). Leave **Output Directory** empty (default `.next`).
+
+### If you see “routes-manifest.json couldn’t be found”
+
+That happens when the project **Root Directory** is still the repo root (old single-app setup). Fix:
+
+1. Vercel → Project → **Settings** → **General** → **Root Directory** → set to `apps/desktop` or `apps/mobile` (not empty / `.`).
+2. **Settings** → **General** → clear a custom **Output Directory** if one was set; Next’s default is `.next` relative to the app.
+3. Redeploy.
+
+CLI: link or deploy with the correct project; `npx vercel --prod` from the repo root uses the **linked** project’s Root Directory—update it in the dashboard or create a new project with the right root.
+
 ## Production environment variables
 
 Use each project’s **production** URL (e.g. `https://<project>.vercel.app`, no trailing slash).

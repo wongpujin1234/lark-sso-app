@@ -5,6 +5,8 @@ const repoRoot = path.join(__dirname, "../..");
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@lark-sso/auth", "@lark-sso/ui", "@lark-sso/device"],
+  /** Include monorepo `packages/*` in serverless traces (Vercel). */
+  outputFileTracingRoot: repoRoot,
   turbopack: {
     root: repoRoot,
   },
